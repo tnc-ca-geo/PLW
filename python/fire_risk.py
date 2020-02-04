@@ -10,6 +10,7 @@ import numpy as np
 import pyproj
 import rasterio
 import rasterio.mask
+from rasterio.errors import WindowError
 from rasterio.windows import Window, get_data_window
 from shapely.geometry import shape, mapping
 from shapely.ops import transform
@@ -76,6 +77,8 @@ def get_geometry(data):
     Extract and validate a polygon from the data.
     """
     raw_geometry = data['geometry']
+    geometry = shape(raw_geometry)
+    return geometry
 
 
 def get_fire_risk(geom, geom_crs='epsg:4326'):
@@ -94,12 +97,25 @@ def get_fire_risk(geom, geom_crs='epsg:4326'):
     count = np.sum(bins[0:4])
     return {
         'fire risk': {
-            'high': bins[1]/count * 100, 'very high': bins[2]/count * 100},
+            'high': bins[1]/count * 100,
+            'very high': bins[2]/count * 100},
         'unit': 'percent of area'}
 
 
 def lambda_handler(event, context):
-    fire_risk = get_fire_risk(TEST_GEOMETRY)
+    data = parse_event(event)
+    try:
+        geometry = get_geometry(data)
+    except KeyError:
+        return {
+            'statusCode': 400,
+            'body': '{"message": "Bad request: No geometry provided."}'}
+    try:
+        fire_risk = get_fire_risk(geometry)
+    except ValueError as e:
+        return {
+            'statusCode': 400,
+            'body': '{"message": "Bad request: ' + str(e) + '}'}
     fire_risk.update({'event': event})
     data = parse_event(event)
     fire_risk.update({'data': data})
@@ -115,8 +131,13 @@ def main():
     fake_event = {
         'httpMethod': 'POST',
         'headers': {'Content-Type': 'application/json'},
-        'body': '{\"drink\": \"beer\"}'
-    }
+        'body': json.dumps({
+            'geometry': {
+                'type': 'Polygon',
+                'coordinates': [[
+                    [-121.8, 37.5], [-121.8, 37.51], [-121.81, 37.51],
+                    [-121.81, 37.5], [-121.8, 37.5]]]
+        }})}
     res = lambda_handler(fake_event, None)
     print(res)
 

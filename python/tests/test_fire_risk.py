@@ -1,4 +1,8 @@
+# standard library
 from unittest import TestCase
+# third party
+import shapely.geometry
+# module to test
 import fire_risk
 
 
@@ -18,4 +22,5 @@ class TestHelpers(TestCase):
                 'type': 'Polygon',
                 'coordinates': [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]]}}
         res = fire_risk.get_geometry(fake_data)
-        print(res)
+        self.assertTrue(isinstance(res, shapely.geometry.Polygon))
+        print(dir(res))
