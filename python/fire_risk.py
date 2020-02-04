@@ -109,16 +109,15 @@ def lambda_handler(event, context):
     except KeyError:
         return {
             'statusCode': 400,
-            'body': '{"message": "Bad request: No geometry provided."}'}
+            'body': (
+                '{"message": "Bad request: No or incomplete geometry '
+                'provided."}')}
     try:
         fire_risk = get_fire_risk(geometry)
     except ValueError as e:
         return {
             'statusCode': 400,
             'body': '{"message": "Bad request: ' + str(e) + '}'}
-    fire_risk.update({'event': event})
-    data = parse_event(event)
-    fire_risk.update({'data': data})
     return {
         'statusCode': 200,
         'body': json.dumps(fire_risk)}
