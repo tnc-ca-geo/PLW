@@ -63,6 +63,21 @@ def write_raster(filepath, data, meta_template, transform):
         dst.write(data)
 
 
+def parse_event(event):
+    data = {}
+    if event.get('httpMethod') == 'POST':
+        if 'application/json' in event['headers'].get('Content-Type'):
+            data = json.loads(event.get('body', {}))
+    return data
+
+
+def get_geometry(data):
+    """
+    Extract and validate a polygon from the data.
+    """
+    raw_geometry = data['geometry']
+
+
 def get_fire_risk(geom, geom_crs='epsg:4326'):
     """
     Return the fire risk for an area
@@ -85,22 +100,24 @@ def get_fire_risk(geom, geom_crs='epsg:4326'):
 
 def lambda_handler(event, context):
     fire_risk = get_fire_risk(TEST_GEOMETRY)
+    fire_risk.update({'event': event})
+    data = parse_event(event)
+    fire_risk.update({'data': data})
     return {
         'statusCode': 200,
-        'body': json.dumps(fire_risk)
-    }
+        'body': json.dumps(fire_risk)}
 
 
 def main():
     """
     The main function.
     """
-    # write geometry for evaluation
-    # geometry = transform_geometry(TEST_GEOMETRY, 'epsg:4326', 'epsg:3310')
-    # write_shape('test.shp', geometry, crs='EPSG:3310')
-    # fire_risk = get_fire_risk(TEST_GEOMETRY)
-    # print(fire_risk)
-    res = lambda_handler(None, None)
+    fake_event = {
+        'httpMethod': 'POST',
+        'headers': {'Content-Type': 'application/json'},
+        'body': '{\"drink\": \"beer\"}'
+    }
+    res = lambda_handler(fake_event, None)
     print(res)
 
 
