@@ -69,6 +69,9 @@ def parse_event(event):
     if event.get('httpMethod') == 'POST':
         if 'application/json' in event['headers'].get('Content-Type'):
             data = json.loads(event.get('body', {}))
+    elif event.get('httpMethod') == 'GET':
+        data = event.get('queryStringParameters', {})
+        data['geometry'] = json.loads(data.get('geometry', {}))
     return data
 
 
@@ -118,6 +121,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 400,
             'body': '{"message": "Bad request: ' + str(e) + '}'}
+    fire_risk.update({'event': event})
     return {
         'statusCode': 200,
         'body': json.dumps(fire_risk)}
@@ -125,7 +129,7 @@ def lambda_handler(event, context):
 
 def main():
     """
-    The main function.
+    The main function, only required for evaluation.
     """
     fake_event = {
         'httpMethod': 'POST',
