@@ -1,16 +1,17 @@
 #!/bin/bash
 
 working_directory=../../data
+cd $working_directory
 
-mkdir -p $working_directory/optimized
-mkdir -p $working_directory/vrt
+mkdir -p optimized
 
-for filename in $working_directory/*.tif
+for filename in *.tif
 do
     gdal_translate -co TILED=YES -co BLOCKXSIZE=512 -co BLOCKYSIZE=512 \
-        -co BIGTIFF=YES -co COMPRESS=LZW \
-        $filename $working_directory/optimized/$(basename $filename)
-    gdalbuildvrt \
-        $working_directory/vrt/$(basename ${filename%.*}.vrt) \
-        $working_directory/optimized/$(basename $filename)
+        -co BIGTIFF=YES -co COMPRESS=LZW $filename optimized/$filename
+done
+cd optimized
+for filename in *.tif
+do
+    gdalbuildvrt ${filename%.*}.vrt $filename
 done
